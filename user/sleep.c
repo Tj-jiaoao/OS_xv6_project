@@ -10,4 +10,10 @@ int main(int argc, char *argv[]) {
   int ticks = atoi(argv[1]);
   int ret = sleep(ticks);
   exit(ret);
+<<<<<<< HEAD
 } 
+=======
+
+  // 这是一个测试
+}
+>>>>>>> b31a3572477b77bb1a4efd88bc11c1471649e02d
