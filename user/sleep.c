@@ -10,4 +10,4 @@ int main(int argc, char *argv[]) {
   int ticks = atoi(argv[1]);
   int ret = sleep(ticks);
   exit(ret);
-}
+} 
