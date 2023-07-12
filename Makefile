@@ -189,7 +189,10 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 	$U/_sleep\
-
+	$U/_pingpong\
+	$U/_pipe1\
+	$U/_pipe2\
+	$U/_primes\
 
 
 
