@@ -42,7 +42,7 @@ int main(void)
             close(fd[WRITEEND]);
             int prime = 0;
             int temp = 0;
-            index = -1;
+            index = -1; // 先取出第一个质数
             
             while (read(fd[READEND], &temp, sizeof(temp)) != 0)
             {
