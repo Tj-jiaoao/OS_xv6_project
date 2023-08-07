@@ -130,3 +130,4 @@ main(int argc, char *argv[])
   printf("sysinfotest: OK\n");
   exit(0);
 }
+
