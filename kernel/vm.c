@@ -80,13 +80,15 @@ kvminithart()
 pte_t *
 walk(pagetable_t pagetable, uint64 va, int alloc)
 {
-  if(va >= MAXVA)
+  if(va >= MAXVA)  // 限界，判断虚拟地址是否超界
     panic("walk");
-
+  // Q: PTE_V 为1并不代表着页已经被分配吧？因为前两级页表只是起索引作用
+  // A：但是前两级页表中的每一项PTE都对应着一个页表（其实也是一页），所以和正常的页分配是一样的。前两级页表的PTE为1代表着下一级的页表已经被分配，为0则相反
   for(int level = 2; level > 0; level--) {
+    // PX提取出level下的对应9位offset，然后通过基址pagetable进行偏移，最后将所得地址的地址赋值给pte指针（pte中存储的信息是地址）
     pte_t *pte = &pagetable[PX(level, va)];
-    if(*pte & PTE_V) {
-      pagetable = (pagetable_t)PTE2PA(*pte);
+    if(*pte & PTE_V){ // 如果这个PTE地址条目存在并且有效位是1的话，可以直接转换基址
+      pagetable = (pagetable_t)PTE2PA(*pte);  // 右移10位消去flags再左移12位，Q：这样会导致12位的0,和原来的va中的后12位不一致啊？A：但是这也不是构造最终的pa
     } else {
       if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
         return 0;
@@ -262,7 +264,7 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 }
 
 // Recursively free page-table pages.
-// All leaf mappings must already have been removed.
+// All leaf mappings must already have been removed.前提是所有的leaf映射已经被移除，也就是说只剩索引了
 void
 freewalk(pagetable_t pagetable)
 {
@@ -430,5 +432,37 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return 0;
   } else {
     return -1;
+  }
+}
+
+// page table 0x0000000087f6e000
+//  ..0: pte 0x0000000021fda801 pa 0x0000000087f6a000
+//  .. ..0: pte 0x0000000021fda401 pa 0x0000000087f69000
+//  .. .. ..0: pte 0x0000000021fdac1f pa 0x0000000087f6b000
+//  .. .. ..1: pte 0x0000000021fda00f pa 0x0000000087f68000
+//  .. .. ..2: pte 0x0000000021fd9c1f pa 0x0000000087f67000
+//  ..255: pte 0x0000000021fdb401 pa 0x0000000087f6d000
+//  .. ..511: pte 0x0000000021fdb001 pa 0x0000000087f6c000
+//  .. .. ..509: pte 0x0000000021fdd813 pa 0x0000000087f76000
+//  .. .. ..510: pte 0x0000000021fddc07 pa 0x0000000087f77000
+//  .. .. ..511: pte 0x0000000020001c0b pa 0x0000000080007000
+
+// 需要知道的是，pt是一个uint64型的指针，指向页表首地址，如果要取出页表中的PTE，就需要解引用。而取出的PTE（如果有效）可以经过PTE2PA转换为物理地址。由于是直接映射，这个物理地址又可以用来指向下一级页表，也作为pagetable
+void vmprint(pagetable_t pt, int level){
+  if (level == 2)
+    printf("page table %p\n", pt);
+  for (int i = 0; i < 512; i++){
+    pte_t pte = *(pt + i);
+    
+    if (pte & PTE_V)
+    {
+      pagetable_t childPt = (pagetable_t)PTE2PA(pte);  
+      for (int i = 2; i >= level;i--)
+        printf(" ..");
+      printf("%d: pte %p pa %p\n", i, pte,childPt);  // 由于最后一级的页表的PTE已经不再有索引功能，所以这时的状态位就可以不仅是PTE_V了,
+      //所以这里需要先打印页表信息再判断是否深度搜索，因为如果先深度搜索的话就不会打印出第三级页表的内容了
+      if ((pte & (PTE_R | PTE_W | PTE_X)) == 0)
+        vmprint(childPt, level - 1);
+    }
   }
 }
