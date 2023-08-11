@@ -80,7 +80,7 @@ runcmd(struct cmd *cmd)
     break;
 
   case REDIR:
-    rcmd = (struct redircmd*)cmd;
+    rcmd = (struct redircmd*)cmd;  // 指针的赋值，直接操作内存，这样的转换是有效的，因为指针变量之间的赋值不存在类型不统一的问题，这样将小转换为大，就可以在保有原属性的基础上去添加新的属性
     close(rcmd->fd);
     if(open(rcmd->file, rcmd->mode) < 0){
       fprintf(2, "open %s failed\n", rcmd->file);

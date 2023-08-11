@@ -23,6 +23,7 @@ struct {
   struct run *freelist;
 } kmem;
 
+// 内存分配器初始化
 void
 kinit()
 {
@@ -30,6 +31,7 @@ kinit()
   freerange(end, (void*)PHYSTOP);
 }
 
+// 对于给定范围内每一页都调用kfree，并且将释放的页面挂在freelist上
 void
 freerange(void *pa_start, void *pa_end)
 {
@@ -54,7 +56,7 @@ kfree(void *pa)
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
 
-  r = (struct run*)pa;
+  r = (struct run*)pa;  // 注意这一操作，于是pa本就是物理地址(8 bytes,指针的大小)，所以此处直接将pa转化为指向run结构的指针，然后使用头插法将回收的页挂在freelist上。此时r成为了头节点
 
   acquire(&kmem.lock);
   r->next = kmem.freelist;
