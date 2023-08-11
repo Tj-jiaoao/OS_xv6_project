@@ -76,14 +76,6 @@ sys_sleep(void)
 }
 
 
-#ifdef LAB_PGTBL
-int
-sys_pgaccess(void)
-{
-  // lab pgtbl: your code here.
-  return 0;
-}
-#endif
 
 uint64
 sys_kill(void)
@@ -107,3 +99,32 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64 
+sys_pgaccess(void)
+{
+  uint64* apage;
+  int npages;
+  uint64 btmask;
+  uint64* abuf;
+  if (argaddr(0,apage) < 0 || argint(1,&npages) < 0 || argaddr(2,abuf) < 0) {
+    return -1;
+  }
+  if (npages < 0  || npages > 64)
+    return -1;
+  while (npages--){
+    pte_t* pte = walk(myproc()->pagetable, apage, 0);
+    if ((*pte & PTE_V) == 0)
+      return -1;
+    if (*pte & PTE_A){
+        btmask +=1;
+        btmask << 1;
+        *pte -= PTE_A;  // reset access bit
+    }
+    apage += PGSIZE;
+  }
+  if (copyout(myproc()->pagetable, abuf, (char*)btmask, sizeof(btmask)) < 0)
+    return -1;
+  return 0;
+}
+// 现在就是要解决在哪里设置这个PTE_A的问题，再把程序代码调好就OK了
