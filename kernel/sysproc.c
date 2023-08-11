@@ -97,35 +97,29 @@ sys_uptime(void)
   return xticks;
 }
 
-
-// kernel/sysproc.c
-uint64
-sys_trace(void)
-{
+uint64 sys_trace(void){
+  // Get the parameter mask from trap frame
   int mask;
-
-  if(argint(0, &mask) < 0) // 通过读取进程的 trapframe，获得 mask 参数
+  if (argint(0,&mask) < 0)
     return -1;
-  
-  myproc()->syscall_trace = mask; // 设置调用进程的 syscall_trace mask
+  // set the proc property syscall_trace to mask
+  myproc()->syscall_trace = mask;
   return 0;
 }
 
-uint64
-sys_sysinfo(void)
-{
-  // 从用户态读入一个指针，作为存放 sysinfo 结构的缓冲区
-  uint64 addr;
-  if(argaddr(0, &addr) < 0)
+
+uint64 sys_sysinfo(void){
+  uint64 attr;
+  if (argaddr(0,&attr) < 0)
     return -1;
-  
-  struct sysinfo sinfo;
-  sinfo.freemem = count_free_mem(); // kalloc.c
-  sinfo.nproc = count_process(); // proc.c
-  
-  // 使用 copyout，结合当前进程的页表，获得进程传进来的指针（逻辑地址）对应的物理地址
-  // 然后将 &sinfo 中的数据复制到该指针所指位置，供用户进程使用。
-  if(copyout(myproc()->pagetable, addr, (char *)&sinfo, sizeof(sinfo)) < 0)
+
+  struct sysinfo sysinfo;
+  struct proc* p = myproc();
+  sysinfo.freemem = count_free_mem();
+  sysinfo.nproc = count_process();
+
+  if (copyout(p->pagetable, attr, (char*)&sysinfo, sizeof(sysinfo)) < 0)  // good practice：若是函数有定义异常的返回值，那么执行时也需要判断，这样不至于一错到底
     return -1;
   return 0;
+
 }

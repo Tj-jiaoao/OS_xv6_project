@@ -657,16 +657,12 @@ procdump(void)
   }
 }
 
-
-
-uint64
-count_process(void) { // added function for counting used process slots (lab2)
-  uint64 cnt = 0;
-  for(struct proc *p = proc; p < &proc[NPROC]; p++) {
-    if(p->state != UNUSED) { 
-        cnt++;
-    }
+uint64 count_process(void){
+  uint64 num = 0;
+  struct proc* p;
+  for (p = proc;p < &proc[NPROC]; p++){
+      if (p->state != UNUSED) num++;
   }
-  return cnt;
+  return num;
 }
 

@@ -110,7 +110,7 @@ walkaddr(pagetable_t pagetable, uint64 va)
     return 0;
 
   pte = walk(pagetable, va, 0);
-  if(pte == 0)
+  if(pte == 0)  // 根据状态位来判断并筛选出用户页
     return 0;
   if((*pte & PTE_V) == 0)
     return 0;
