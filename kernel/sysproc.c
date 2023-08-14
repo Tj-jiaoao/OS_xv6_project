@@ -100,31 +100,38 @@ sys_uptime(void)
   return xticks;
 }
 
+static uint64 ito2(uint64 i, int t){
+  if (!i) return 0;
+  return t * (i % 2) + ito2(i / 2, t * 10);
+}
+
 uint64 
 sys_pgaccess(void)
 {
-  uint64* apage;
+  uint64 apage;
   int npages;
-  uint64 btmask;
-  uint64* abuf;
-  if (argaddr(0,apage) < 0 || argint(1,&npages) < 0 || argaddr(2,abuf) < 0) {
+  uint64 btmask = 0;
+  uint64 abuf;
+  if (argaddr(0,&apage) < 0 || argint(1,&npages) < 0 || argaddr(2,&abuf) < 0) {
     return -1;
   }
   if (npages < 0  || npages > 64)
     return -1;
-  while (npages--){
+  
+  for (int i = 0; i < npages; i++)
+  {
     pte_t* pte = walk(myproc()->pagetable, apage, 0);
     if ((*pte & PTE_V) == 0)
       return -1;
     if (*pte & PTE_A){
-        btmask +=1;
-        btmask << 1;
-        *pte -= PTE_A;  // reset access bit
+        btmask = btmask | (1 << i);
+        *pte = *pte & ~PTE_A;  // reset access bit
     }
     apage += PGSIZE;
+    printf("%d ", ito2(btmask,1));
   }
-  if (copyout(myproc()->pagetable, abuf, (char*)btmask, sizeof(btmask)) < 0)
+  if (copyout(myproc()->pagetable, abuf, (char*)&btmask, sizeof(btmask)) < 0)
     return -1;
   return 0;
 }
-// 现在就是要解决在哪里设置这个PTE_A的问题，再把程序代码调好就OK了
+
