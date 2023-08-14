@@ -52,6 +52,18 @@ sys_sbrk(void)
   return addr;
 }
 
+void backtrace()
+{
+   uint64 fp=r_fp();
+   uint64 high=PGROUNDUP(fp),low=PGROUNDDOWN(fp);
+   printf("backtrace:\n");
+   while(fp>=low && fp<high)
+   {	
+      printf("%p\n",*((uint64*)(fp-8)));
+      fp=*((uint64*)(fp-16));
+   }
+}
+
 uint64
 sys_sleep(void)
 {
@@ -69,6 +81,7 @@ sys_sleep(void)
     }
     sleep(&ticks, &tickslock);
   }
+  backtrace();
   release(&tickslock);
   return 0;
 }
