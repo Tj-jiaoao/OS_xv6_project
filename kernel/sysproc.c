@@ -130,6 +130,7 @@ sys_pgaccess(void)
     apage += PGSIZE;
     printf("%d ", ito2(btmask,1));
   }
+  printf("\n");
   if (copyout(myproc()->pagetable, abuf, (char*)&btmask, sizeof(btmask)) < 0)
     return -1;
   return 0;
