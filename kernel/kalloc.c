@@ -1,3 +1,4 @@
+
 // Physical memory allocator, for user processes,
 // kernel stacks, page-table pages,
 // and pipe buffers. Allocates whole 4096-byte pages.
@@ -21,12 +22,13 @@ struct run {
 struct {
   struct spinlock lock;
   struct run *freelist;
-} kmem;
+} kmems[NCPU];
 
 void
 kinit()
 {
-  initlock(&kmem.lock, "kmem");
+  for (int i = 0;i < NCPU;i++)
+    initlock(&kmems[i].lock, "kmem");
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -55,11 +57,14 @@ kfree(void *pa)
   memset(pa, 1, PGSIZE);
 
   r = (struct run*)pa;
-
-  acquire(&kmem.lock);
-  r->next = kmem.freelist;
-  kmem.freelist = r;
-  release(&kmem.lock);
+  int cpui = 0;
+  push_off();
+  cpui = cpuid();
+  pop_off();
+  acquire(&kmems[cpui].lock);
+  r->next = kmems[cpui].freelist;
+  kmems[cpui].freelist = r;
+  release(&kmems[cpui].lock);
 }
 
 // Allocate one 4096-byte page of physical memory.
@@ -69,12 +74,27 @@ void *
 kalloc(void)
 {
   struct run *r;
-
-  acquire(&kmem.lock);
-  r = kmem.freelist;
+  int cpui = 0;
+  push_off();
+  cpui = cpuid();
+  pop_off();
+  
+  acquire(&kmems[cpui].lock);
+  r = kmems[cpui].freelist;
   if(r)
-    kmem.freelist = r->next;
-  release(&kmem.lock);
+    kmems[cpui].freelist = r->next;
+  else{
+    for (int cpuj = 0;cpuj < NCPU;cpuj++) 
+      if (kmems[cpuj].freelist){
+        acquire(&kmems[cpuj].lock);
+        r = kmems[cpuj].freelist;
+        kmems[cpuj].freelist = r -> next;
+        release(&kmems[cpuj].lock);
+        break;
+    }
+  }
+
+  release(&kmems[cpui].lock);
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
