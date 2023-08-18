@@ -1,14 +1,3 @@
-/*
- * @Author: SuBonan
- * @Date: 2022-03-22 21:00:07
- * @LastEditTime: 2022-03-23 09:34:15
- * @FilePath: \xv6-labs-2021\kernel\kalloc.c
- * @Github: https://github.com/SugarSBN
- * これなに、これなに、これない、これなに、これなに、これなに、ねこ！ヾ(*´∀｀*)ﾉ
- */
-// Physical memory allocator, for user processes,
-// kernel stacks, page-table pages,
-// and pipe buffers. Allocates whole 4096-byte pages.
 
 #include "types.h"
 #include "param.h"
